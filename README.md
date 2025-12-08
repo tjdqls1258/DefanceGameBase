@@ -37,3 +37,11 @@
 3.  각 모듈(Manager, CharacterController 등)의 스크립트를 기반으로 프로젝트에 맞는 세부 로직을 구현합니다.
 
 -----
+
+UI 에디터
+<img width="2547" height="1015" alt="image" src="https://github.com/user-attachments/assets/af708302-6b00-42f8-bdb5-bde5f380934b" />
+
+Map 에디터
+<img width="1775" height="940" alt="image" src="https://github.com/user-attachments/assets/07b49eef-cc93-4eaf-9804-6060226b0fb6" />
+<img width="1772" height="938" alt="image" src="https://github.com/user-attachments/assets/d96237a4-5e0b-4080-a317-8f1c802d54aa" />
+

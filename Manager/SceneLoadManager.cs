@@ -63,6 +63,12 @@ public class SceneLoadManager : MonoSingleton<SceneLoadManager>
     {
         switch (type)
         {
+            case SceneInfo.SceneType.HomeScene:
+                GameMaster.Instance.uiManager.AutoUIManager.SetUIType(AutoUIManager.UIType.main);
+                break;
+            case SceneInfo.SceneType.GameScene:
+                GameMaster.Instance.uiManager.AutoUIManager.SetUIType(AutoUIManager.UIType.inGame);
+                break;
             default:
                 return;
         }

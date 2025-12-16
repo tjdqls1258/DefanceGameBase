@@ -6,4 +6,5 @@ using UnityEngine;
 public class CharacterModelData : ScriptableObject
 {
     public string modelObjectName;
+    public string modelSpriteName;
 }

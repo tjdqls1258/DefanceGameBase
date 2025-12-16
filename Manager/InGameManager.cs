@@ -100,6 +100,8 @@ public class InGameManager : MonoBehaviour
         GameUtil.mainCamera.transform.position = new Vector3(tileMaxX * 0.5f, tileMaxY * 0.5f, -10);
         GameUtil.mainCamera.orthographicSize =  System.Math.Max(tileMaxX + 1, tileMaxY + 1) * 0.5f;
 
+        GameData.Instance.DefaulteCameraPos = GameUtil.mainCamera.transform.position;
+
         m_enemySpawnManager.SetEnemyData(m_enemySpawnData, m_mapData.pathDatas);
         m_enemySpawnManager.StartSpawn();
     }

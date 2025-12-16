@@ -43,12 +43,16 @@ public class EnemyController : MonoBehaviour
         while (m_cancellation.IsCancellationRequested == false)
         {
             await UniTask.WaitForFixedUpdate();
-            EnemyMove();
+            //홈으로 돌아갈때 캔슬 토큰 확인
+            if(m_cancellation.IsCancellationRequested == false)
+                EnemyMove();
         }
     }
 
     protected bool CheckArraivePath(Vector2 path)
     {
+        if(transform == null) return false;
+
         return Vector2.Distance(path, transform.position) < stopDistance;
     }
 
@@ -80,5 +84,10 @@ public class EnemyController : MonoBehaviour
         m_cancellation.Cancel();
         gameObject.SetActive(false);
         m_disableAction?.Invoke(m_enemyData.ID, this);
+    }
+
+    private void OnDisable()
+    {
+        m_cancellation.Cancel();
     }
 }

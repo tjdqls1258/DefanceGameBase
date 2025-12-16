@@ -1,21 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerCharacterContrroller : MonoBehaviour
 {
     private List<SkillBase> m_currentSkill;
-    private CharacterData m_characterData;
+    private InGameCharacterData m_characterData;
     private PlayerAttackController m_atkController;
+
+    /// <summary> 유닛이 사망했을 때 호출될 UnityAction 델리게이트입니다. </summary>
+    private UnityAction m_unitDieAction;
+    private bool m_onClick = false;
 
     private void Awake()
     {
         m_atkController = GetComponent<PlayerAttackController>();    
     }
 
-    public void SetCharacter(CharacterData characterData)
+    public void SetCharacter(InGameCharacterData characterData)
     {
         m_characterData = characterData;
-        m_atkController.InitCharacterData(characterData);
+        m_atkController.InitCharacterData(m_characterData);
         //스킬 추가
     }
 
@@ -24,5 +29,38 @@ public class PlayerCharacterContrroller : MonoBehaviour
 
     }
 
-    public CharacterData GetCharacterData() => m_characterData;
+    public InGameCharacterData GetCharacterData() => m_characterData;
+
+    public void AddDieAction(UnityAction action)
+    {
+        m_unitDieAction += action;
+    }
+
+
+    public void OnPointerDownAction()
+    {
+        m_onClick = true;
+        AtkAreaActive(m_onClick);
+    }
+
+    public void OnPointerUpAction()
+    {
+        m_onClick = false;
+        AtkAreaActive(m_onClick);
+    }
+
+    public void AtkAreaActive(bool Active)
+    {
+        m_atkController.GetAtkRangeObject().SetActive(Active);
+    }
+
+    public void SetActiveAtkController(bool enable)
+    {
+        m_atkController.enabled = enable;
+    }
+
+    public void Spawn()
+    {
+        SetActiveAtkController(true);
+    }
 }

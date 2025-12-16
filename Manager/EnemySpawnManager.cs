@@ -92,4 +92,9 @@ public class EnemySpawnManager : MonoBehaviour
         }
         m_disableList[id].Add(enemy);
     }
+
+    private void OnDisable()
+    {
+        m_cancellationTokenSource.Cancel();
+    }
 }

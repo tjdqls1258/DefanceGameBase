@@ -8,7 +8,12 @@ public class UIBase : CachObject
     public Action m_onShow;
     public Action m_onClose;
 
-    private UIManager.UISequence m_UISequence;
+    protected UIManager.UISequence m_UISequence;
+
+    protected virtual void Awake()
+    {
+
+    }
 
     public virtual void Init(Transform parent = null)
     {

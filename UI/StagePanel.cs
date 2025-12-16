@@ -13,8 +13,9 @@ public class StagePanel : UIBase
         Content
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        m_UISequence = UIManager.UISequence.StageSeletePanel;
         Init();
     }
 

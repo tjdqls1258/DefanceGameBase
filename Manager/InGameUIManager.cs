@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +18,17 @@ public class InGameUIManager : UIBaseFormMaker
         }
     }
 
+    enum OnClickSettingPanel
+    {
+        OnClickSettingPanel,
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+        Bind<OnClickCharacterPaenl>(typeof(OnClickSettingPanel));
+    }
+
     public void SetInGameDataTest()
     {
         Logger.Log("Game Data Test Setting");
@@ -30,6 +42,19 @@ public class InGameUIManager : UIBaseFormMaker
             if (m_spawnButton.Length <= characterCount)
                 break;
             m_spawnButton[characterCount].SetCharater(characterDatas[characterCount]);
+        }
+    }
+
+    public void OnClickCharacter(InGameCharacterData characterData, Action activeAction = null, Action disableAction = null)
+    {
+        Get<OnClickCharacterPaenl>(0).OnClickCharacter(characterData, activeAction, disableAction);
+    }
+
+    public void ResetCharacterDatas()
+    {
+       foreach(var buttonItem in m_spawnButton)
+        {
+            buttonItem.DeleteData();  
         }
     }
 }

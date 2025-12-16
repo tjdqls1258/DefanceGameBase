@@ -1,6 +1,8 @@
+using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -11,6 +13,8 @@ using UnityEngine.Events;
 [RequireComponent(typeof(CircleCollider2D))]
 public class PlayerAttackController : MonoBehaviour
 {
+    private readonly string effectName = "EffectPrefabs/Hit_FX01.prefab";
+
     // ====== Inspector Settings ======
     [Header("Attack Settings")]
     [Tooltip("공격 사거리 (CircleCollider2D의 반지름으로 사용됨).")]
@@ -18,8 +22,6 @@ public class PlayerAttackController : MonoBehaviour
 
     [Tooltip("공격 사이의 지연 시간 (초).")]
     [SerializeField] private float m_attackDelay = 1f;
-
-    private bool m_onClick = false;
 
     // ====== Runtime State & Caches ======
 
@@ -32,11 +34,8 @@ public class PlayerAttackController : MonoBehaviour
     /// <summary> 다음 공격까지 경과된 시간입니다. </summary>
     private float m_currentDelay = 0;
 
-    /// <summary> 유닛이 사망했을 때 호출될 UnityAction 델리게이트입니다. </summary>
-    private UnityAction m_unitDieAction; // 현재 사용되지 않음
-
-    [SerializeField] private GameObject m_atkTargetObject;
-    private CharacterData m_characterData;
+    [SerializeField] private GameObject m_atkRangeObject;
+    private InGameCharacterData m_characterData;
 
     // ----------------------------------------------------------------------
     // ## Initialization & Public Interface
@@ -51,29 +50,23 @@ public class PlayerAttackController : MonoBehaviour
             collider.isTrigger = true;
             collider.radius = m_attackDistance;
 
-            m_atkTargetObject.transform.localScale = Vector3.one * m_attackDistance * 2;
+            m_atkRangeObject.transform.localScale = Vector3.one * m_attackDistance * 2;
         }
     }
 
-    /// <summary>
-    /// 캐릭터 스폰 시 호출되는 메서드입니다.
-    /// </summary>
-    public void Spawn()
+    public void InitCharacterData(InGameCharacterData characterData)
     {
-        Logger.Log("Spaw PlayerCharacter");
+        m_characterData = characterData;
+        SetEffect().Forget();
     }
 
-    /// <summary>
-    /// 유닛 사망 이벤트에 구독할 액션을 추가합니다.
-    /// </summary>
-    public void AddDieAction(UnityAction action)
+    private async UniTask SetEffect()
     {
-        m_unitDieAction += action;
-    }
-
-    public void InitCharacterData(CharacterData characterData)
-    {
-        characterData = m_characterData;
+        if (ObjectPoolManager.Instance.CheckAddKey(effectName))
+            return;
+        ObjectPoolManager.Instance.AddKey(effectName);
+        var effectObject = await AddressableManager.Instance.InstantiateObjectAsync(effectName);
+        ObjectPoolManager.Instance.SetPoolObject(effectName, effectObject);
     }
 
     // ----------------------------------------------------------------------
@@ -173,23 +166,15 @@ public class PlayerAttackController : MonoBehaviour
 
             // TODO: 실제 공격 로직 (데미지 계산, 애니메이션 재생 등)을 여기에 구현
             Logger.Log($"Action {target.gameObject.name}: ATTACK!");
+            var effect = ObjectPoolManager.Instance.AddPoolObject(effectName);
+            effect.transform.position = target.transform.position;  
         }
     }
 
-    public void AtkAreaActive(bool Active)
-    {
-        m_atkTargetObject.SetActive(Active);
-    }
+    public GameObject GetAtkRangeObject() => m_atkRangeObject;
 
-    public void OnPointerDownAction()
+    private void OnDestroy()
     {
-        m_onClick = true;
-        AtkAreaActive(m_onClick);
-    }
-
-    public void OnPointerUpAction()
-    {
-        m_onClick = false;
-        AtkAreaActive(m_onClick);
+        ObjectPoolManager.Instance.RemovePoolObject(effectName);
     }
 }

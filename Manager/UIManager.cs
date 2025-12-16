@@ -22,6 +22,7 @@ public class UIManager : Singleton<UIManager>
     {
         None = -1,
         StageSeletePanel, // 예시: 스테이지 선택 패널
+        CharacterListPanel,
         // Todo: 다른 UI 패널 타입 추가 예정
     }
 

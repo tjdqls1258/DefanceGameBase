@@ -25,7 +25,7 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     private Camera MainCamera => GameUtil.mainCamera; // 메인 카메라 캐시
 
     // ====== Runtime State ======
-    private PlayerAttackController m_previewCharacter; // 드래그 시 표시되는 유닛의 프리뷰 인스턴스
+    private PlayerCharacterContrroller m_previewCharacter; // 드래그 시 표시되는 유닛의 프리뷰 인스턴스
     private Vector3 m_pointerWorldPosition; // 현재 포인터의 월드 좌표 위치
     private RaycastHit2D m_hit2D; // Physics2D.Raycast의 마지막 결과
 
@@ -66,9 +66,8 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
         m_previewCharacter.transform.position = m_pointerWorldPosition;
 
         // 2. 프리뷰 상태이므로 공격/로직은 비활성화
-        m_previewCharacter.GetComponent<PlayerAttackController>().enabled = false;
-
-        m_previewCharacter.GetComponent<PlayerAttackController>().AtkAreaActive(true);
+        m_previewCharacter.SetActiveAtkController(false);
+        m_previewCharacter.AtkAreaActive(true);
     }
 
     /// <summary>
@@ -109,7 +108,7 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
             CharacterSpawn, // 히트 성공 및 유효성 통과 시: 유닛 배치 실행
             () => m_previewCharacter.gameObject.SetActive(false)); // 실패 시: 프리뷰 비활성화
 
-        m_previewCharacter.GetComponent<PlayerAttackController>().AtkAreaActive(false);
+        m_previewCharacter.AtkAreaActive(false);
     }
 
     // ====== Utility Methods ======
@@ -156,12 +155,14 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     /// </summary>
     private async UniTask CreateCharacterPreviewAsync()
     {
-        if (m_previewCharacter != null) return;
+        if (m_previewCharacter != null)
+            return;
 
         // AddressableManager를 통해 객체를 비동기로 인스턴스화
         var obj = await AddressableManager.Instance.InstantiateObjectAsync(m_characterData.modelData.modelObjectName);
 
-        m_previewCharacter = obj.GetComponent<PlayerAttackController>();
+        m_previewCharacter = obj.GetComponent<PlayerCharacterContrroller>();
+        m_previewCharacter.SetCharacter(new(m_characterData));
         m_previewCharacter.AddDieAction(HandleCharacterDie); // 유닛 사망 시 쿨타임 처리를 위한 액션 등록
         m_previewCharacter.gameObject.SetActive(false); // 생성 직후에는 비활성화 상태
     }
@@ -230,5 +231,13 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
         // 2. 상태 및 UI 업데이트
         m_isUnitSpawned = true; // 유닛 배치 상태로 전환 (쿨타임 시작까지 유지)
         m_blockImage.fillAmount = 1; // 쿨타임 UI를 즉시 꽉 채움 (DieAction에서 감소 시작)
+    }
+
+    public void DeleteData()
+    {
+        Destroy(m_previewCharacter);
+        m_previewCharacter = null;
+        m_isUnitSpawned = false; // 쿨타임 종료, 스폰 가능 상태로 복귀
+        m_blockImage.fillAmount = 0;
     }
 }

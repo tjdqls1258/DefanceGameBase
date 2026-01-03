@@ -9,9 +9,9 @@ public static class ScriptDataLoader<DATA> where DATA : CSVData, new()
 {
     readonly static string CSV_PATH = "Assets/Util/GoogleSheet/CSVData/";
 
-    public static Dictionary<int, DATA> ReadFile((TextAsset, Type) strFileType, ICsvListHelper csvList) 
+    public static Dictionary<int, DATA> ReadFile((string, Type) strFileType, ICsvListHelper csvList) 
     {
-        string reader = strFileType.Item1.text;
+        string reader = strFileType.Item1;
         string[] dataList = reader.Split("\n");
         int currentLine = 0;
         bool isLast = false;
@@ -79,6 +79,7 @@ public static class ScriptDataLoader<DATA> where DATA : CSVData, new()
 public class CSVHelper
 {
     private const string PATH = "CSVData/{0}.csv";
+    private readonly string PATH_LOCAL = $"{Application.dataPath}/Util/GoogleSheet/CSVData/{{0}}.csv";
     protected Dictionary<Type, object> m_scriptDataList = new();
 
     public enum CSVFile
@@ -90,6 +91,16 @@ public class CSVHelper
     {
         (CSVFile.CharacterData ,(new CharacterDataList())),
     };
+
+    public void InitCSVData()
+    {
+        foreach(var data in m_csvData)
+        {
+            StreamReader reader = new StreamReader(string.Format(PATH_LOCAL, data.Item1.ToString()));
+            data.Item2.SetDatas(reader.ReadToEnd());
+            m_scriptDataList.Add(data.Item2.GetType(), data.Item2);
+        }
+    }
 
     public async UniTask InitCSVDataAsync()
     {
@@ -104,10 +115,8 @@ public class CSVHelper
         async UniTask InitItem((CSVFile, ICsvListHelper) data)
         {
             var file = await AddressableManager.Instance.LoadAssetAndCacheAsync<TextAsset>(string.Format(PATH, data.Item1.ToString()));
-            data.Item2.SetDatas(file);
+            data.Item2.SetDatas(file.text);
             m_scriptDataList.Add(data.Item2.GetType(), data.Item2);
-
-            Logger.Log($"{data.Item1}");
         }
     }
 
@@ -131,6 +140,11 @@ public class CSVDataList<Data> : ICsvListHelper where Data : CSVData, new()
         m_dataList = ScriptDataLoader<Data>.ReadFile((file, typeof(Data)), this);
     }
 
+    public virtual void SetDatas(TextAsset file)
+    {
+        m_dataList = ScriptDataLoader<Data>.ReadFile((file, typeof(Data)), this);
+    }
+
     public virtual Data GetData(int id)
     {
         return m_dataList[id];
@@ -140,4 +154,5 @@ public class CSVDataList<Data> : ICsvListHelper where Data : CSVData, new()
 public interface ICsvListHelper
 {
     public void SetDatas(TextAsset csvFile);
+    public void SetDatas(string csvFilePath);
 }

@@ -57,7 +57,7 @@ public class GameMaster : MonoSingleton<GameMaster>
         sceneLoadManager.Init();
         uiManager.Init();
         popupManager.Init();
-        //csvHelper.InitCSVData();
+        await csvHelper.InitCSVDataAsync();
 
         // 핵심 리소스 로드 (Master Canvas 등)
         await LoadBaseResource();
@@ -68,6 +68,8 @@ public class GameMaster : MonoSingleton<GameMaster>
         // 초기 UI 레이아웃 설정
         // AutoUIManager가 MasterCanvas 내에서 JSON 기반 UI 배치를 수행합니다.
         await uiManager.AutoUIManager.LoadJsonAsync();
+
+        Logger.Log(csvHelper.GetScripteData<CharacterDataList>().GetName(1));
     }
 
     // ----------------------------------------------------------------------

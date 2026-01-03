@@ -47,7 +47,7 @@ public class CharacterDetail : CachObject
 
         Get<Image>((int)Images.CharacterImage).sprite = m_characterData.characterSprite;
         Get<TextMeshProUGUI>((int)Texts.StateLV_Text).text = "1";
-        Get<TextMeshProUGUI>((int)Texts.State_Text).text = $"{m_characterData.name} data Not Ready";
+        Get<TextMeshProUGUI>((int)Texts.State_Text).text = $"{m_characterData.characterName} data Not Ready";
     }
 
     public void Close()

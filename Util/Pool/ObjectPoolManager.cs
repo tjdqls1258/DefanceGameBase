@@ -41,9 +41,15 @@ public class ObjectPoolManager : MonoSingleton<ObjectPoolManager>
 
     public GameObject AddPoolObject(string key, Transform parent = null)
     {
-        if (m_disablePool.ContainsKey(key) == false)
+        if (m_poolBase.ContainsKey(key) == false)
         {
+            Logger.Log($"m_disablePool Null : {key}");
             return null;
+        }
+
+        if(m_disablePool.ContainsKey(key) == false)
+        {
+            m_disablePool.Add(key, new());
         }
 
         GameObject result;
@@ -51,6 +57,13 @@ public class ObjectPoolManager : MonoSingleton<ObjectPoolManager>
         {
             result = m_disablePool[key].First();
             m_disablePool[key].Remove(result);
+            if (result == null)
+            {
+                Logger.Log($"m_disablePool First Null");
+                m_disablePool[key].Remove(result);
+                result = Instantiate(m_poolBase[key].gameObject, parent);
+            }
+
         }
         else
             result = Instantiate(m_poolBase[key].gameObject, parent);
@@ -70,7 +83,6 @@ public class ObjectPoolManager : MonoSingleton<ObjectPoolManager>
             m_disablePool[key].Add(target);
             if (m_activePool.ContainsKey(key) == false)
             {
-                Logger.LogError("Not Has Key"); 
                 return;
             }
 
@@ -118,6 +130,34 @@ public class ObjectPoolManager : MonoSingleton<ObjectPoolManager>
                 Destroy(m_poolBase[key]);
 
             m_poolBase.Remove(key);
+        }
+    }
+
+    public void ClearNullPoolObject()
+    {
+        foreach(var key in m_disablePool.Keys)
+        {
+            foreach(var disableObejct in m_disablePool[key])
+            {
+                if (disableObejct.IsUnityNull())
+                    m_disablePool[key].Remove(disableObejct);
+            }
+
+        }
+
+        foreach(var key in m_activePool.Keys)
+        {
+            foreach(var activeObject in m_activePool[key])
+            {
+                if (activeObject.IsUnityNull())
+                    m_activePool[key].Remove(activeObject);
+            }
+        }
+
+        foreach(var key in m_poolBase.Keys)
+        {
+            if (m_poolBase[key].IsUnityNull())
+                m_poolBase.Remove(key);
         }
     }
 }

@@ -6,9 +6,8 @@ public class EnemeyData
 {
     public int ID;
     public string modleName;
-#if UNITY_EDITOR
+    public CharacterState characterState;
     public EnemyController TestObject;
-#endif
 }
 
 [Serializable]
@@ -17,4 +16,19 @@ public class EnemySpawnData
     public int pathIndex;
     public EnemeyData enemyData;
     public float spawnTime;
+}
+
+[Serializable]
+public class CharacterState
+{
+    public float maxHp = 1;
+    public int atkPower;
+    public int defPower;
+    public int atkSpeed;
+}
+
+[Serializable]
+public class MpCharacterState : CharacterState
+{
+    public float maxMp = 1 ;
 }

@@ -17,22 +17,22 @@ public class AddressableManager : MonoSingleton<AddressableManager>
 
     // 로드된 Addressables 에셋 객체(프리팹, 텍스처 등)를 저장합니다. Addressables.Release(Object)를 위해 사용됩니다.
     // Key: Addressable Key
-    private readonly Dictionary<string, Object> _loadedAssets = new();
+    private readonly Dictionary<string, Object> m_loadedAssets = new();
 
     // 특정 Addressable 키로 생성된 모든 인스턴스화된 GameObject를 추적합니다.
     // Key: Addressable Key
-    private readonly Dictionary<string, List<GameObject>> _instantiatedGameObjects = new();
+    private readonly Dictionary<string, List<GameObject>> m_instantiatedGameObjects = new();
 
     // 캐싱 딕셔너리 접근 시 동시성 문제를 방지하기 위한 Lock 객체입니다. (Addressables 콜백이 메인 스레드가 아닐 수 있으므로 사용)
     private readonly object _lock = new();
 
     // ====== State ======
-    private bool _isInitialized = false;
+    private bool m_isInitialized = false;
 
     /// <summary>
     /// Addressables 시스템 초기화 완료 여부를 나타냅니다.
     /// </summary>
-    public bool IsInitialized => _isInitialized;
+    public bool IsInitialized => m_isInitialized;
 
     public override void Init()
     {
@@ -49,10 +49,10 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     /// </summary>
     public async UniTask InitAsync()
     {
-        if (_isInitialized) return;
+        if (m_isInitialized) return;
 
         await Addressables.InitializeAsync();
-        _isInitialized = true;
+        m_isInitialized = true;
     }
 
     /// <summary>
@@ -60,10 +60,10 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     /// </summary>
     /// <param name="labels">다운로드할 에셋 그룹의 라벨 배열</param>
     /// <param name="onDownloading">다운로드 진행 상태 콜백 (DownloadedBytes, TotalBytes)</param>
-    public async UniTask DownloadAssetsAsync(string[] labels, Action<long, long> onDownloading = null,
+    public async UniTask DownloadAssetsAsync(string[] labels, Action<string, long, long> onDownloading = null,
         Action onSuccess = null, Action onFail = null)
     {
-        if (!_isInitialized) await InitAsync();
+        if (!m_isInitialized) await InitAsync();
 
         if (labels == null || labels.Length == 0) return;
 
@@ -95,7 +95,8 @@ public class AddressableManager : MonoSingleton<AddressableManager>
             while (!downloadHandle.IsDone)
             {
                 var status = downloadHandle.GetDownloadStatus();
-                onDownloading?.Invoke(status.DownloadedBytes, status.TotalBytes);
+                onDownloading?.Invoke(label, status.DownloadedBytes, status.TotalBytes);
+                Logger.Log($"{status.DownloadedBytes} / {status.TotalBytes}");
                 await UniTask.Delay(100); // 100ms 간격으로 다운로드 상태를 업데이트
             }
 
@@ -123,7 +124,7 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     /// <param name="key">Addressable 키</param>
     public async UniTask<T> LoadAssetAndCacheAsync<T>(string key) where T : Object
     {
-        if (_loadedAssets.ContainsKey(key)) return _loadedAssets[key] as T;
+        if (m_loadedAssets.ContainsKey(key)) return m_loadedAssets[key] as T;
 
         var loadHandle = Addressables.LoadAssetAsync<T>(key);
         await loadHandle;
@@ -133,7 +134,7 @@ public class AddressableManager : MonoSingleton<AddressableManager>
             lock (_lock)
             {
                 // 성공 시, Addressables.Release()를 위해 로드된 Object 결과 자체를 캐시에 저장합니다.
-                _loadedAssets[key] = loadHandle.Result;
+                m_loadedAssets[key] = loadHandle.Result;
             }
 
             return loadHandle.Result;
@@ -159,6 +160,7 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     public async UniTask<GameObject> InstantiateObjectAsync(string key, Transform parent = null)
     {
         AsyncOperationHandle<GameObject> instantiateHandle = Addressables.InstantiateAsync(key, parent);
+
         await instantiateHandle;
 
         if (instantiateHandle.Status != AsyncOperationStatus.Succeeded)
@@ -172,10 +174,10 @@ public class AddressableManager : MonoSingleton<AddressableManager>
         // 1. 인스턴스 캐싱 (Destroy 시 추적 목록에서 제거하기 위함)
         lock (_lock)
         {
-            if (!_instantiatedGameObjects.ContainsKey(key))
-                _instantiatedGameObjects.Add(key, new List<GameObject>());
+            if (!m_instantiatedGameObjects.ContainsKey(key))
+                m_instantiatedGameObjects.Add(key, new List<GameObject>());
 
-            _instantiatedGameObjects[key].Add(result);
+            m_instantiatedGameObjects[key].Add(result);
         }
 
         // 2. 자동 릴리즈 로직 추가: 인스턴스가 파괴될 때 Addressables.ReleaseInstance를 호출하도록 설정
@@ -220,7 +222,7 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     {
         lock (_lock)
         {
-            if (_instantiatedGameObjects.TryGetValue(key, out List<GameObject> list))
+            if (m_instantiatedGameObjects.TryGetValue(key, out List<GameObject> list))
             {
                 list.Remove(obj);
             }
@@ -236,10 +238,10 @@ public class AddressableManager : MonoSingleton<AddressableManager>
         Object assetToRelease;
         lock (_lock)
         {
-            if (!_loadedAssets.TryGetValue(key, out assetToRelease))
+            if (!m_loadedAssets.TryGetValue(key, out assetToRelease))
                 return;
 
-            _loadedAssets.Remove(key);
+            m_loadedAssets.Remove(key);
         }
 
         if (assetToRelease != null)
@@ -256,14 +258,14 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     {
         lock (_lock)
         {
-            foreach (var asset in _loadedAssets.Values)
+            foreach (var asset in m_loadedAssets.Values)
             {
                 if (asset != null)
                 {
                     Addressables.Release(asset);
                 }
             }
-            _loadedAssets.Clear();
+            m_loadedAssets.Clear();
         }
     }
 }

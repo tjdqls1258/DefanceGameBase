@@ -70,12 +70,12 @@ public class EnemySpawnManager : MonoBehaviour
             if (pathData != null)
             {
                 var vectorList = GameUtil.ConvartSerializableVector2IntToVector2Int_List(pathData.path);
-                obj.InitEnemyData(vectorList, DieAction);
+                obj.InitEnemyData(m_enemySpawnDatas[m_spawnCount].enemyData, vectorList, DieAction);
             }
             else
             {
                 var vectorList = GameUtil.ConvartSerializableVector2IntToVector2Int_List(m_pathData[0].path);
-                obj.InitEnemyData(vectorList, DieAction);
+                obj.InitEnemyData(m_enemySpawnDatas[m_spawnCount].enemyData, vectorList, DieAction);
             }
 
             m_spawnCount++;

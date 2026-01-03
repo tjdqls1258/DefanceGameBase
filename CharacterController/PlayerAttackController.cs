@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
+using static UnityEngine.GraphicsBuffer;
 
 /// <summary>
 /// 플레이어 캐릭터의 공격 로직을 제어하는 컨트롤러입니다.
@@ -36,6 +37,9 @@ public class PlayerAttackController : MonoBehaviour
 
     [SerializeField] private GameObject m_atkRangeObject;
     private InGameCharacterData m_characterData;
+    private CharacterAnimationController m_characterAnimationController;
+
+    [SerializeField] private MpHpController m_pHpController;
 
     // ----------------------------------------------------------------------
     // ## Initialization & Public Interface
@@ -54,10 +58,17 @@ public class PlayerAttackController : MonoBehaviour
         }
     }
 
-    public void InitCharacterData(InGameCharacterData characterData)
+    public void InitCharacterData(InGameCharacterData characterData, CharacterAnimationController animator)
     {
         m_characterData = characterData;
         SetEffect().Forget();
+        characterData.characterData.SetCharacterState();
+        m_pHpController.InitController(characterData.characterData.characterState);
+
+        if(animator != null)
+            m_characterAnimationController = animator;
+
+        m_characterAnimationController.SetAction(AtkAction, null);
     }
 
     private async UniTask SetEffect()
@@ -150,6 +161,17 @@ public class PlayerAttackController : MonoBehaviour
     // ## Attack Execution
     // ----------------------------------------------------------------------
 
+    private void AtkAction()
+    {
+        if (m_target == null)
+            return;
+        // TODO: 실제 공격 로직 (데미지 계산, 애니메이션 재생 등)을 여기에 구현
+        m_target.Hit(10);
+        Logger.Log($"Action {m_target.gameObject.name}: ATTACK!");
+        var effect = ObjectPoolManager.Instance.AddPoolObject(effectName);
+        effect.transform.position = m_target.transform.position;
+    }
+
     /// <summary>
     /// 공격 딜레이를 계산하고, 딜레이가 충족되면 실제 공격 행동을 실행합니다.
     /// </summary>
@@ -164,11 +186,13 @@ public class PlayerAttackController : MonoBehaviour
             // 딜레이 충족: 공격 실행
             m_currentDelay = 0; // 딜레이 초기화
 
-            // TODO: 실제 공격 로직 (데미지 계산, 애니메이션 재생 등)을 여기에 구현
-            Logger.Log($"Action {target.gameObject.name}: ATTACK!");
-            var effect = ObjectPoolManager.Instance.AddPoolObject(effectName);
-            effect.transform.position = target.transform.position;  
+            m_characterAnimationController.PlayAnimation_Trigger(CharacterAnimationController.AnimationTrigger.ATK);
         }
+    }
+
+    public virtual void Hit(int atk)
+    {
+        m_pHpController.UpdateHp(-atk);
     }
 
     public GameObject GetAtkRangeObject() => m_atkRangeObject;

@@ -1,9 +1,11 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class InGameUIManager : UIBaseFormMaker
 {
+    [SerializeField] private TextMeshProUGUI m_costText;
     [SerializeField] private UnitButton[] m_spawnButton;
     [SerializeField] private CharacterData[] m_testData;
     private Camera m_camera;
@@ -17,6 +19,10 @@ public class InGameUIManager : UIBaseFormMaker
             return m_camera; 
         }
     }
+
+    public InGameManager m_inGameManager { get; private set; }
+
+    private Action<int> m_updateCostAction = null;
 
     enum OnClickSettingPanel
     {
@@ -33,6 +39,18 @@ public class InGameUIManager : UIBaseFormMaker
     {
         Logger.Log("Game Data Test Setting");
         SetCharacterDatas(m_testData);
+        m_inGameManager = FindAnyObjectByType<InGameManager>();
+        m_inGameManager.SetChargeAction(ChargeText);
+        m_inGameManager.StartGame();
+
+        ChargeText(m_inGameManager.currentCost);
+
+        void ChargeText(int currentCost)
+        {
+            m_costText.text = currentCost.ToString();
+            if (m_updateCostAction != null)
+                m_updateCostAction.Invoke(currentCost);
+        }
     }
 
     public void SetCharacterDatas(CharacterData[] characterDatas)
@@ -41,7 +59,8 @@ public class InGameUIManager : UIBaseFormMaker
         {
             if (m_spawnButton.Length <= characterCount)
                 break;
-            m_spawnButton[characterCount].SetCharater(characterDatas[characterCount]);
+            m_spawnButton[characterCount].SetCharater(characterDatas[characterCount], this);
+            m_updateCostAction += m_spawnButton[characterCount].UpdateCostAction;
         }
     }
 
@@ -50,7 +69,16 @@ public class InGameUIManager : UIBaseFormMaker
         Get<OnClickCharacterPaenl>(0).OnClickCharacter(characterData, activeAction, disableAction);
     }
 
-    public void ResetCharacterDatas()
+    public void ExitGame()
+    {
+        m_costText.text = "0";
+        m_inGameManager.ExitGame();
+        ResetCharacterDatas();
+
+        m_inGameManager = null;
+    }
+
+    private void ResetCharacterDatas()
     {
        foreach(var buttonItem in m_spawnButton)
         {

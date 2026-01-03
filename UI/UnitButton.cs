@@ -18,6 +18,8 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     [Header("Character Data")]
     [SerializeField] private CharacterData m_characterData; // 버튼에 할당된 캐릭터 데이터
 
+    private InGameUIManager m_inGameUIManager;
+
     // ====== Cached Components and Data ======
     // m_tileMask는 Tile 레이어(Layer 8)에 대해서만 레이캐스트를 수행합니다.
     private readonly LayerMask m_tileMask = 1 << 8;
@@ -28,22 +30,24 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     private PlayerCharacterContrroller m_previewCharacter; // 드래그 시 표시되는 유닛의 프리뷰 인스턴스
     private Vector3 m_pointerWorldPosition; // 현재 포인터의 월드 좌표 위치
     private RaycastHit2D m_hit2D; // Physics2D.Raycast의 마지막 결과
+    private bool m_startDrag = false;
 
     private bool m_isUnitSpawned = false; // 유닛이 현재 맵에 배치되었는지 (또는 쿨타임 중인지) 여부
 
     private void Awake()
     {
-        // 쿨타임 오버레이를 초기에는 숨김
-        m_blockImage.fillAmount = 0;
+        ActiveBlockButton(true);
     }
 
     /// <summary>
     /// 버튼에 캐릭터 데이터를 할당하고, 해당 캐릭터의 프리뷰 인스턴스를 비동기로 생성합니다.
     /// </summary>
-    public void SetCharater(CharacterData characterData)
+    public void SetCharater(CharacterData characterData, InGameUIManager ingameManager = null)
     {
         m_characterData = characterData;
         CreateCharacterPreviewAsync().Forget(); // Addressables 로딩을 비동기로 시작하고 결과를 기다리지 않음
+
+        m_inGameUIManager = ingameManager;
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -60,13 +64,14 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     {
         if (IsUnitSpawned() || m_previewCharacter == null) return;
 
+        m_startDrag = true;
         // 1. 프리뷰 캐릭터 활성화 및 위치 초기화
         m_previewCharacter.gameObject.SetActive(true);
         SetPointerWorldPosition(eventData.position);
         m_previewCharacter.transform.position = m_pointerWorldPosition;
 
         // 2. 프리뷰 상태이므로 공격/로직은 비활성화
-        m_previewCharacter.SetActiveAtkController(false);
+        m_previewCharacter.SetSpawn(false);
         m_previewCharacter.AtkAreaActive(true);
     }
 
@@ -75,7 +80,7 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     /// </summary>
     public void OnDrag(PointerEventData eventData)
     {
-        if (IsUnitSpawned() || m_previewCharacter == null) return;
+        if (IsUnitSpawned() || m_previewCharacter == null || m_startDrag == false) return;
 
         SetPointerWorldPosition(eventData.position);
         m_previewCharacter.transform.position = m_pointerWorldPosition; // 임시로 포인터 위치로 이동
@@ -100,8 +105,9 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     /// </summary>
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (IsUnitSpawned() || m_previewCharacter == null) return;
+        if (IsUnitSpawned() || m_previewCharacter == null || m_startDrag == false) return;
 
+        m_startDrag = false;
         SetPointerWorldPosition(eventData.position);
 
         TrySnapToTile(eventData.position,
@@ -159,7 +165,7 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
             return;
 
         // AddressableManager를 통해 객체를 비동기로 인스턴스화
-        var obj = await AddressableManager.Instance.InstantiateObjectAsync(m_characterData.modelData.modelObjectName);
+        var obj = await AddressableManager.Instance.InstantiateObjectAsync(m_characterData.modelObjectName);
 
         m_previewCharacter = obj.GetComponent<PlayerCharacterContrroller>();
         m_previewCharacter.SetCharacter(new(m_characterData));
@@ -217,7 +223,7 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     {
         // 최종 유효성 검사 (타일이 유효하고, 스폰 지점이 사용 가능한지)
         var spawnTile = m_hit2D.collider.gameObject.GetComponent<SpawnPlayerCharacterTile>();
-        if (!IsValidSpawnTile(spawnTile) || spawnTile.CheckSpawnPoint(false) == false)
+        if (!IsValidSpawnTile(spawnTile) || spawnTile.CheckSpawnPoint(false) == false || CheckCost() == false)
         {
             m_previewCharacter.gameObject.SetActive(false);
             return;
@@ -226,11 +232,9 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
         // 1. 유닛 배치
         spawnTile.SpawnUnit(m_previewCharacter);
         m_previewCharacter.enabled = true; // 유닛의 로직 활성화
-        m_previewCharacter.Spawn(); // 유닛의 내부 스폰 로직 실행
+        m_previewCharacter.SetSpawn(true); // 유닛의 내부 스폰 로직 실행
 
-        // 2. 상태 및 UI 업데이트
-        m_isUnitSpawned = true; // 유닛 배치 상태로 전환 (쿨타임 시작까지 유지)
-        m_blockImage.fillAmount = 1; // 쿨타임 UI를 즉시 꽉 채움 (DieAction에서 감소 시작)
+        ActiveBlockButton(true);
     }
 
     public void DeleteData()
@@ -239,5 +243,38 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
         m_previewCharacter = null;
         m_isUnitSpawned = false; // 쿨타임 종료, 스폰 가능 상태로 복귀
         m_blockImage.fillAmount = 0;
+        ActiveBlockButton(true);
+    }
+
+    private bool CheckCost()
+    {
+        if (m_inGameUIManager.m_inGameManager.UseCost(m_characterData.cost) == false)
+        {
+            Logger.Log("코스트 부족!");
+            return false;
+        }
+
+        return true;
+    }
+
+    public void UpdateCostAction(int cost)
+    {
+        if (m_previewCharacter == null || m_previewCharacter.CheckSpawn())
+            return;
+
+        if (m_characterData.cost >= cost && m_isUnitSpawned == false)
+        {
+            ActiveBlockButton(true);
+        }
+        else if(m_characterData.cost <= cost)
+        {
+            ActiveBlockButton(false);
+        }
+    }
+
+    private void ActiveBlockButton(bool Active)
+    {
+        m_isUnitSpawned = Active; // 유닛 배치 상태로 전환 (쿨타임 시작까지 유지)
+        m_blockImage.fillAmount = Active ? 1 : 0; // 쿨타임 UI를 즉시 꽉 채움 (DieAction에서 감소 시작)
     }
 }

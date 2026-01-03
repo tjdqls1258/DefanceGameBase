@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -260,3 +261,4 @@ public class MapEditorUI : MonoBehaviour
         m_selectedTileButton = tileItemButton; // 현재 선택된 버튼 저장
     }
 }
+#endif

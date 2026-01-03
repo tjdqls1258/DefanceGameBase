@@ -6,17 +6,24 @@ using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
-    [SerializeField] private EnemeyData m_enemyData;
+    [SerializeField] protected EnemeyData m_enemyData;
 
     public bool isDie = false;
 
     List<Vector2> m_movePathList = new();
-    private int m_currentPathIndex = 0;
-    private float m_moveSpeed = 2f;
-    [SerializeField] private float stopDistance = 0.01f;
+    protected int m_currentPathIndex = 0;
+    protected float m_moveSpeed = 2f;
+    [SerializeField] protected float stopDistance = 0.01f;
 
     CancellationTokenSource m_cancellation = new();
-    private Action<int, EnemyController> m_disableAction;
+    protected Action<int, EnemyController> m_disableAction;
+    [SerializeField] protected HPController m_hpController;
+    [SerializeField] protected CharacterAnimationController m_characterAnimationController;
+
+    private void Awake()
+    {
+        m_characterAnimationController = GetComponent<CharacterAnimationController>();
+    }
 
     protected virtual void SetPath(List<Vector2Int> pathData)
     {
@@ -59,8 +66,10 @@ public class EnemyController : MonoBehaviour
     /// <summary>
     /// 적 유닛을 초기화 해줍니다. (체력, 이동 경로)
     /// </summary>
-    public virtual void InitEnemyData(List<Vector2Int> movePathList, Action<int,EnemyController> disableAction)
+    public virtual void InitEnemyData(EnemeyData enemyData, List<Vector2Int> movePathList, Action<int,EnemyController> disableAction)
     {
+        m_enemyData = enemyData;
+
         m_movePathList.Clear();
         transform.position = new(movePathList[0].x, movePathList[0].y, 0);
         this.m_disableAction = disableAction;
@@ -71,6 +80,7 @@ public class EnemyController : MonoBehaviour
 
         m_currentPathIndex = 0;
         gameObject.SetActive(true);
+        m_hpController.InitController(m_enemyData.characterState);
     }
 
     public virtual void DieAction()
@@ -84,6 +94,12 @@ public class EnemyController : MonoBehaviour
         m_cancellation.Cancel();
         gameObject.SetActive(false);
         m_disableAction?.Invoke(m_enemyData.ID, this);
+    }
+
+    public virtual void Hit(int atk)
+    {
+        m_hpController.UpdateHp(-atk);
+        m_characterAnimationController.PlayAnimation_Trigger(CharacterAnimationController.AnimationTrigger.HIT);
     }
 
     private void OnDisable()

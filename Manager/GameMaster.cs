@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,6 +10,10 @@ using UnityEngine;
 /// </summary>
 public class GameMaster : MonoSingleton<GameMaster>
 {
+    readonly string[] ADDRESSABLE_LABEL = { "InGameData", "SpriteAltas", "JsonData", "UI" };
+
+    private CSVHelper m_csvHelper = new();
+
     // ====== Managers Access (Read-Only Properties) ======
 
     // 다른 관리자 인스턴스에 접근하기 위한 간결한 속성 정의
@@ -17,6 +22,7 @@ public class GameMaster : MonoSingleton<GameMaster>
     public SceneLoadManager sceneLoadManager => SceneLoadManager.Instance;
     public UIManager uiManager => UIManager.Instance;
     public PopupManager popupManager => PopupManager.Instance;
+    public CSVHelper csvHelper => m_csvHelper;
     // Todo: UserDataManager와 같은 다른 핵심 관리자도 여기에 추가하면 좋습니다.
 
     // ----------------------------------------------------------------------
@@ -29,40 +35,39 @@ public class GameMaster : MonoSingleton<GameMaster>
     public override void Init()
     {
         base.Init();
-        InitAscy().Forget();
+    }
+
+    public async UniTask InitAddress(Action<string, long, long> downloadAction)
+    {
+        // Addressables 초기화 및 다운로드 확인
+        // 필수 리소스 다운로드 및 초기화가 완료될 때까지 대기합니다.
+        await addressableManager.InitAsync();
+
+        await addressableManager.DownloadAssetsAsync(ADDRESSABLE_LABEL, onDownloading:downloadAction);
+        
     }
 
     /// <summary>
     /// 게임의 모든 관리자 초기화, 리소스 로드, 데이터 로드, 씬 로드를 순차적으로 처리하는 비동기 초기화 파이프라인입니다.
     /// </summary>
-    private async UniTask InitAscy()
+    public async UniTask InitAscy()
     {
-        // 1. Addressables 초기화 및 다운로드 확인
-        // 필수 리소스 다운로드 및 초기화가 완료될 때까지 대기합니다.
-        await addressableManager.InitAsync();
-
-        // 2. 관리자 초기화 (동기적/빠른 초기화)
-        // Addressables 초기화 이후에 UIManager, PopupManager 등이 필요하므로 순서가 중요합니다.
+        // 관리자 초기화 (동기적/빠른 초기화)
         soundManager.Init();
         sceneLoadManager.Init();
         uiManager.Init();
         popupManager.Init();
+        //csvHelper.InitCSVData();
 
-        // 3. 핵심 리소스 로드 (Master Canvas 등)
+        // 핵심 리소스 로드 (Master Canvas 등)
         await LoadBaseResource();
 
-        // 4. 유저 데이터 로드 및 초기 설정
+        // 유저 데이터 로드 및 초기 설정
         await AsyncLoadUserData();
 
-        // 5. 초기 UI 레이아웃 설정
+        // 초기 UI 레이아웃 설정
         // AutoUIManager가 MasterCanvas 내에서 JSON 기반 UI 배치를 수행합니다.
         await uiManager.AutoUIManager.LoadJsonAsync();
-
-        // 6. 초기 씬 로드
-        await sceneLoadManager.SceneLoad(SceneInfo.SceneType.HomeScene);
-
-        // 7. 최종 UI 화면 전환 (HomeScene에 맞는 UI 타입 활성화)
-        uiManager.AutoUIManager.SetUIType(AutoUIManager.UIType.main, true);
     }
 
     // ----------------------------------------------------------------------
@@ -135,4 +140,6 @@ public class GameMaster : MonoSingleton<GameMaster>
         UnityEditor.EditorApplication.isPlaying = false;
 #endif
     }
+
+    
 }

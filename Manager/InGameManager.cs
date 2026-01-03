@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +13,10 @@ public class InGameManager : MonoBehaviour
     [SerializeField] private GameObject m_mapObject;
 
     // ====== Game Data ======
+    public int currentCost { get; private set; } = 0;
+    private float m_costAddTime = 1;
+    private float m_currentTime = 0;
+    private bool m_isStartGame = false;
 
     // 플레이어 및 적 데이터는 외부에서 설정(SetData)하며, 읽기 전용으로 접근 가능
     public PlayerData PlayerData { get; private set; }
@@ -35,6 +40,7 @@ public class InGameManager : MonoBehaviour
     private const string SPRITE_ATLAS_FOLDER = "SpriteAltas";
 
     private EnemySpawnManager m_enemySpawnManager;
+    private Action<int> m_chargeCostAction;
 
     [SerializeField] private List<EnemySpawnData> m_enemySpawnData;
 
@@ -43,6 +49,18 @@ public class InGameManager : MonoBehaviour
         // 게임 데이터 싱글톤에서 현재 스테이지 정보를 가져와 맵 로드 시작
         LoadMapDataAsync(GameData.Instance.MainStage, GameData.Instance.SubStage).Forget();
         m_enemySpawnManager = GetComponent<EnemySpawnManager>();  
+    }
+
+    private void LateUpdate()
+    {
+        if (m_isStartGame == false || currentCost > 99) return;
+
+        m_currentTime += Time.deltaTime;
+        if (m_currentTime > m_costAddTime)
+        {
+            m_currentTime = 0;
+            UpdateCost(1);
+        }
     }
 
     // ----------------------------------------------------------------------
@@ -91,8 +109,6 @@ public class InGameManager : MonoBehaviour
         // 모든 타일 생성 작업이 완료될 때까지 대기
         await UniTask.WhenAll(tileCreationTasks);
 
-        // 로드 완료 후 로직 (예: 유닛 배치, 게임 시작 알림 등)
-
         // 카메라 위치, 사이즈 조정
         var tileMaxX = m_mapData.tileDatas.Max(t => t.x);
         var tileMaxY = m_mapData.tileDatas.Max(t => t.y);
@@ -133,6 +149,11 @@ public class InGameManager : MonoBehaviour
     // ## Game Data Management
     // ----------------------------------------------------------------------
 
+    public void SetChargeAction(Action<int> charge)
+    {
+        m_chargeCostAction = charge;
+    }
+
     /// <summary>
     /// 인게임에 필요한 플레이어 및 적 데이터를 설정합니다.
     /// </summary>
@@ -140,6 +161,28 @@ public class InGameManager : MonoBehaviour
     {
         PlayerData = playerData;
         EnemyData = enemyData;
+    }
+
+    public void StartGame()
+    {
+        m_isStartGame = true;
+    }
+
+    public bool UseCost(int cost)
+    {
+        if (currentCost < cost)
+            return false;
+
+        UpdateCost(-cost);
+        return true;
+    }
+
+    private void UpdateCost(int cost)
+    {
+        currentCost += cost;
+
+        if (m_chargeCostAction != null)
+            m_chargeCostAction.Invoke(currentCost);
     }
 
     // ----------------------------------------------------------------------
@@ -155,5 +198,8 @@ public class InGameManager : MonoBehaviour
         AddressableManager.Instance.UnloadAsset($"{MAP_DATA_FOLDER}/{_currentStageKey}.asset");
         // 스프라이트 아틀라스 (.spriteatlas) 해제
         AddressableManager.Instance.UnloadAsset($"{SPRITE_ATLAS_FOLDER}/{_stageAtlasKey}.spriteatlas");
+
+        m_isStartGame = false;
+        currentCost = 0;
     }
 }

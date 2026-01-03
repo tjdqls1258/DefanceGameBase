@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -68,3 +69,4 @@ public class TileEdtiorBase : TileBase, IPointerDownHandler, IPointerUpHandler, 
         tileImage.color = currentColor;
     }
 }
+#endif

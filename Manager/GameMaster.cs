@@ -62,6 +62,9 @@ public class GameMaster : MonoSingleton<GameMaster>
         // 핵심 리소스 로드 (Master Canvas 등)
         await LoadBaseResource();
 
+        //캐릭터 이미지 세팅
+        await csvHelper.GetScripteData<CharacterDataList>().CharacterSpriteSetting();
+
         // 유저 데이터 로드 및 초기 설정
         await AsyncLoadUserData();
 
@@ -69,7 +72,7 @@ public class GameMaster : MonoSingleton<GameMaster>
         // AutoUIManager가 MasterCanvas 내에서 JSON 기반 UI 배치를 수행합니다.
         await uiManager.AutoUIManager.LoadJsonAsync();
 
-        Logger.Log(csvHelper.GetScripteData<CharacterDataList>().GetName(1));
+        
     }
 
     // ----------------------------------------------------------------------

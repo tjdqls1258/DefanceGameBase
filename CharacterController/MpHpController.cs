@@ -14,7 +14,10 @@ public class MpHpController : HPController
         private set
         {
             m_currentMp = value;
-            m_mpBar.fillAmount = Math.Min(m_currentMp / m_maxMP, 1);
+            if (m_maxMP == 0)
+                m_mpBar.fillAmount = 0;
+            else
+                m_mpBar.fillAmount = Math.Min(m_currentMp / m_maxMP, 1);
         }
         get
         {

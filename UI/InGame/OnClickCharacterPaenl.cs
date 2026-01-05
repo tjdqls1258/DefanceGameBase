@@ -44,8 +44,7 @@ public class OnClickCharacterPaenl : CachObject
         activeAction?.Invoke();
         this.disableAction = disableAction;
         Time.timeScale = 0f;
-        Get<Image>((int)Images.CharacterImage).sprite = characterData.characterData.characterSprite;
-        
+        Get<Image>((int)Images.CharacterImage).sprite = characterData.characterData.GetCharacterSprite();
     }
 
     private void ClosePanel()

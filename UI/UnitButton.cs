@@ -165,7 +165,8 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
             return;
 
         // AddressableManager를 통해 객체를 비동기로 인스턴스화
-        var obj = await AddressableManager.Instance.InstantiateObjectAsync(m_characterData.modelObjectName);
+        //var obj = await AddressableManager.Instance.InstantiateObjectAsync(m_characterData.modelObjectName);
+        var obj = await AddressableManager.Instance.InstantiateObjectAsync("Test");
 
         m_previewCharacter = obj.GetComponent<PlayerCharacterContrroller>();
         m_previewCharacter.SetCharacter(new(m_characterData));

@@ -1,38 +1,41 @@
 using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "CharacterData", menuName = "Scriptable Objects/CharacterData")]
-public class CharacterData : ScriptableObject
-{
-    public int id;
-    public int cost;
-    public int rating;
-    public string characterName;
-    public float maxHp = 1;
-    public int atkPower;
-    public int defPower;
-    public int atkSpeed;
-    public float maxMp = 1;
+//[CreateAssetMenu(fileName = "CharacterData", menuName = "Scriptable Objects/CharacterData")]
+//public class CharacterData : ScriptableObject
+//{
+//    public int id;
+//    public int cost;
+//    public int rating;
+//    public string characterName;
+//    public float maxHp = 1;
+//    public int atkPower;
+//    public int defPower;
+//    public int atkSpeed;
+//    public float maxMp = 1;
 
-    public string modelObjectName;
-    public string modelSpriteName;
+//    public string modelObjectName;
+//    public string modelSpriteName;
 
-    //Todo ½ºÅÝ
-    public MpCharacterState characterState;
-    public Sprite characterSprite;
+//    //Todo ½ºÅÝ
+//    public MpCharacterState characterState;
+//    public Sprite characterSprite;
 
-    public void SetCharacterState()
-    {
-        characterState = new() 
-        {
-            maxHp = maxHp, 
-            atkPower = atkPower, 
-            atkSpeed = atkSpeed, 
-            maxMp = maxMp, 
-            defPower = defPower 
-        };
-    }
-}
+//    public void SetCharacterState()
+//    {
+//        characterState = new() 
+//        {
+//            maxHp = maxHp, 
+//            atkPower = atkPower, 
+//            atkSpeed = atkSpeed, 
+//            maxMp = maxMp, 
+//            defPower = defPower 
+//        };
+//    }
+//}
 
 public class InGameCharacterData
 {
@@ -46,7 +49,7 @@ public class InGameCharacterData
     public int upgradeCount;
 }
 
-public class CharacterDataTest : CSVData
+public class CharacterData : CSVData
 {
     public int id;
     public int cost;
@@ -63,6 +66,23 @@ public class CharacterDataTest : CSVData
 
     private Sprite modelSprite;
 
+    public MpCharacterState characterState;
+    private Sprite characterSprite;
+
+    private bool m_setCharacterSprite = false;
+
+    public void SetCharacterState()
+    {
+        characterState = new()
+        {
+            maxHp = maxHp,
+            atkPower = atkPower,
+            atkSpeed = atkSpeed,
+            maxMp = maxMp,
+            defPower = defPower
+        };
+    }
+
     public override int GetID()
     {
         return id;
@@ -70,8 +90,10 @@ public class CharacterDataTest : CSVData
 
     public async UniTask<Sprite> GetSpriteAsync()
     {
-        if(modelSprite == null)
-            modelSprite = await AddressableManager.Instance.LoadAssetAndCacheAsync<Sprite>(modelSpriteName);
+        if (modelSprite == null)
+        {
+            await SetSprite();
+        }
 
         return modelSprite;
     }
@@ -81,19 +103,61 @@ public class CharacterDataTest : CSVData
         return await AddressableManager.Instance.LoadAssetAndCacheAsync<GameObject>(modelObjectName);
     }
 
-    public Sprite GetSprite()
+    public Sprite GetCharacterSprite()
     {
-        if(modelSprite != null)
-            return modelSprite;
+        if(characterSprite != null)
+            return characterSprite;
 
         return null;
     }
+
+    public async UniTask SetSprite()
+    {
+        if (m_setCharacterSprite) return;
+
+        m_setCharacterSprite = true;
+        Texture2D texture = await AddressableManager.Instance.LoadAssetAndCacheAsync<Texture2D>(modelSpriteName);
+        characterSprite = Sprite.Create(texture, new(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+    }
 }
 
-public class CharacterDataList : CSVDataList<CharacterDataTest>
+public class CharacterDataList : CSVDataList<CharacterData>
 {
     public string GetName(int id)
     {
         return m_dataList[id].characterName;
+    }
+
+    public async UniTask<Sprite> GetSpriteAsync(int id)
+    {
+        if (m_dataList.ContainsKey(id))
+            await m_dataList[id].GetSpriteAsync();
+
+        return null;
+    }
+
+    public List<CharacterData> GetAllList()
+    {
+        return m_dataList.Values.ToList();
+    }
+
+    public List<CharacterData> GetDefaultList()
+    {
+        List<CharacterData> datas = new();
+
+        datas.Add(GetData(1));
+        datas.Add(GetData(2));
+
+        return datas;
+    }
+
+    public async UniTask CharacterSpriteSetting()
+    {
+        List<UniTask> taskList = new();
+
+        foreach (var id in m_dataList.Keys)
+            taskList.Add(m_dataList[id].SetSprite());
+
+        await UniTask.WhenAll(taskList);
     }
 }

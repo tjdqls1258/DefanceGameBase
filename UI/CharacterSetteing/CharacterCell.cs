@@ -13,7 +13,7 @@ public class CharacterCell : FancyGridViewCell<CharacterData, CharacterPanelCont
     public override void UpdateContent(CharacterData itemData)
     {
         m_data = itemData;
-        m_characterImage.sprite = itemData.characterSprite;
+        m_characterImage.sprite = itemData.GetCharacterSprite();
         m_characterName.text = itemData.characterName;
     }
 

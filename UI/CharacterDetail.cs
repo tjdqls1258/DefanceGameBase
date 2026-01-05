@@ -45,9 +45,9 @@ public class CharacterDetail : CachObject
         m_group.DOFade(1, m_fadeTime);
         m_characterData = data;
 
-        Get<Image>((int)Images.CharacterImage).sprite = m_characterData.characterSprite;
-        Get<TextMeshProUGUI>((int)Texts.StateLV_Text).text = "1";
-        Get<TextMeshProUGUI>((int)Texts.State_Text).text = $"{m_characterData.characterName} data Not Ready";
+        Get<Image>((int)Images.CharacterImage).sprite = m_characterData.GetCharacterSprite();
+        Get<TextMeshProUGUI>((int)Texts.StateLV_Text).text = "LV. 1";
+        Get<TextMeshProUGUI>((int)Texts.State_Text).text = $"{m_characterData.characterName} data Not Ready\nCost : {m_characterData.cost}\nRating : {m_characterData.rating}";
     }
 
     public void Close()

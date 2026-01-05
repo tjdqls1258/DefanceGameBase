@@ -7,7 +7,7 @@ public class InGameUIManager : UIBaseFormMaker
 {
     [SerializeField] private TextMeshProUGUI m_costText;
     [SerializeField] private UnitButton[] m_spawnButton;
-    [SerializeField] private CharacterData[] m_testData;
+
     private Camera m_camera;
     public Camera mainCamera
     {
@@ -38,7 +38,14 @@ public class InGameUIManager : UIBaseFormMaker
     public void SetInGameDataTest()
     {
         Logger.Log("Game Data Test Setting");
-        SetCharacterDatas(m_testData);
+
+        System.Collections.Generic.List<CharacterData> testdatas = new()
+        {
+            GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(1),
+            GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(2)
+        };
+
+        SetCharacterDatas(testdatas.ToArray());
         m_inGameManager = FindAnyObjectByType<InGameManager>();
         m_inGameManager.SetChargeAction(ChargeText);
         m_inGameManager.StartGame();

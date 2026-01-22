@@ -6,10 +6,23 @@ public class PopupBase : UIBase
     public Action showAction;
     public Action closeAction;
     
+    protected virtual void BindInit()
+    {
+
+    }
+    protected virtual void AddBtnEvent()
+    {
+
+    }
+
+
     public virtual void Init(params object[] parm)
     {
         if(showAction != null)
             showAction.Invoke();
+
+        BindInit();
+        AddBtnEvent();
     }
 
     public virtual void Close()

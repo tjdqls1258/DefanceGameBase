@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class GameData : Singleton<GameData>
 {
+    public const int MAX_SETTING_CHARACTERCOUNT = 12;
+
     public int MainStage, SubStage;
 
     public InGameCharacterData[] characterDatas;

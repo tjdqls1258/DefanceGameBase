@@ -25,9 +25,9 @@ public class MpHpController : HPController
         }
     }
 
-    public override void InitController(CharacterState characterState)
+    public override void InitController(CharacterState characterState, Action dieAction)
     {
-        base.InitController(characterState);
+        base.InitController(characterState, dieAction);
         var mpCharacter = characterState as MpCharacterState;
 
         m_maxMP = mpCharacter.maxMp;

@@ -21,6 +21,7 @@ public class PopupManager : MonoSingleton<PopupManager>
     {
         None = 0, // 기본값 또는 오류 처리용
         PopupMsg, // 예시: 간단한 메시지 팝업
+        PopupQ, // OK/Cancel
         // Todo: 다른 팝업 타입 추가 예정 (Settings, Inventory, Shop 등)
     }
 
@@ -47,13 +48,11 @@ public class PopupManager : MonoSingleton<PopupManager>
 
     // 팝업 데이터 테이블의 Addressable 키 상수
     private const string POPUP_DATA_TABLE_KEY = "PopupDataTable";
+    [SerializeField] private TextAsset m_localPopupDataText;
 
     public override void Init()
     {
         base.Init();
-
-        // 초기화 시 팝업 경로 데이터 테이블을 비동기로 로드하고 캐싱합니다.
-        SettingPopupDataAsync().Forget();
     }
 
     // ----------------------------------------------------------------------
@@ -93,6 +92,26 @@ public class PopupManager : MonoSingleton<PopupManager>
             // 4. 로드된 TextAsset은 더 이상 필요 없으므로 해제
             // LoadAddressableAssetAsync를 사용했기 때문에 명시적으로 Release가 필요합니다.
             Addressables.Release(popupDataTable);
+        }
+    }
+
+    public void SettingPopupData()
+    {
+        // 1. JSON 역직렬화
+        try
+        {
+            List<PopupData> data = JsonConvert.DeserializeObject<List<PopupData>>(m_localPopupDataText.text);
+
+            // 2. 딕셔너리에 매핑 저장
+            foreach (PopupData dataItem in data)
+            {
+                if(_popupDataMap.ContainsKey(dataItem.popupType) == false)
+                    _popupDataMap.Add(dataItem.popupType, dataItem.path);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"[PopupManager] Failed to deserialize popup data table: {e.Message}");
         }
     }
 

@@ -4,38 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-//[CreateAssetMenu(fileName = "CharacterData", menuName = "Scriptable Objects/CharacterData")]
-//public class CharacterData : ScriptableObject
-//{
-//    public int id;
-//    public int cost;
-//    public int rating;
-//    public string characterName;
-//    public float maxHp = 1;
-//    public int atkPower;
-//    public int defPower;
-//    public int atkSpeed;
-//    public float maxMp = 1;
-
-//    public string modelObjectName;
-//    public string modelSpriteName;
-
-//    //Todo ½ºÅÝ
-//    public MpCharacterState characterState;
-//    public Sprite characterSprite;
-
-//    public void SetCharacterState()
-//    {
-//        characterState = new() 
-//        {
-//            maxHp = maxHp, 
-//            atkPower = atkPower, 
-//            atkSpeed = atkSpeed, 
-//            maxMp = maxMp, 
-//            defPower = defPower 
-//        };
-//    }
-//}
 
 public class InGameCharacterData
 {
@@ -116,7 +84,7 @@ public class CharacterData : CSVData
         if (m_setCharacterSprite) return;
 
         m_setCharacterSprite = true;
-        Texture2D texture = await AddressableManager.Instance.LoadAssetAndCacheAsync<Texture2D>(modelSpriteName);
+        Texture2D texture = await AddressableManager.Instance.LoadAssetAndCacheAsync<Texture2D>(string.Format(Util.CHARACTER_SPRITE_PATH, modelSpriteName));
         characterSprite = Sprite.Create(texture, new(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
     }
 }
@@ -145,8 +113,8 @@ public class CharacterDataList : CSVDataList<CharacterData>
     {
         List<CharacterData> datas = new();
 
-        datas.Add(GetData(1));
-        datas.Add(GetData(2));
+        foreach (var id in m_dataList.Keys)
+            datas.Add(m_dataList[id]);
 
         return datas;
     }

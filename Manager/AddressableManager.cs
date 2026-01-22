@@ -26,6 +26,7 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     // 캐싱 딕셔너리 접근 시 동시성 문제를 방지하기 위한 Lock 객체입니다. (Addressables 콜백이 메인 스레드가 아닐 수 있으므로 사용)
     private readonly object _lock = new();
 
+    private Dictionary<string, long> m_checkDownload = new();
     // ====== State ======
     private bool m_isInitialized = false;
 
@@ -60,36 +61,16 @@ public class AddressableManager : MonoSingleton<AddressableManager>
     /// </summary>
     /// <param name="labels">다운로드할 에셋 그룹의 라벨 배열</param>
     /// <param name="onDownloading">다운로드 진행 상태 콜백 (DownloadedBytes, TotalBytes)</param>
-    public async UniTask DownloadAssetsAsync(string[] labels, Action<string, long, long> onDownloading = null,
+    public async UniTask DownloadAssetsAsync(Action<string, long, long> onDownloading = null,
         Action onSuccess = null, Action onFail = null)
     {
         if (!m_isInitialized) await InitAsync();
 
-        if (labels == null || labels.Length == 0) return;
+        //if (labels == null || labels.Length == 0) return;
 
-        foreach (string label in labels)
+        foreach (string label in m_checkDownload.Keys)
         {
-            // 1. 다운로드 크기 확인
-            AsyncOperationHandle<long> downloadSizeHandle = Addressables.GetDownloadSizeAsync(label);
-            await downloadSizeHandle.Task;
-
-            if (downloadSizeHandle.Status != AsyncOperationStatus.Succeeded)
-            {
-                onFail?.Invoke();
-                Addressables.Release(downloadSizeHandle); // 핸들 해제
-                continue;
-            }
-
-            long totalBytes = downloadSizeHandle.Result;
-            Addressables.Release(downloadSizeHandle); // 사용 완료된 크기 확인 핸들 해제
-
-            if (totalBytes <= 0)
-            {
-                onSuccess?.Invoke();
-                continue;
-            }
-
-            // 2. 종속성 다운로드 시작
+            // 종속성 다운로드 시작
             AsyncOperationHandle downloadHandle = Addressables.DownloadDependenciesAsync(label);
 
             while (!downloadHandle.IsDone)
@@ -110,9 +91,34 @@ public class AddressableManager : MonoSingleton<AddressableManager>
                 onFail?.Invoke();
             }
         }
+
+        onSuccess?.Invoke();
     }
 
+    public async UniTask<long> DownloadChecdk(string[] lables)
+    {
+        long totalByte = 0;
+        foreach (string label in lables)
+        {
+            AsyncOperationHandle<long> downloadSizeHandle = Addressables.GetDownloadSizeAsync(label);
+            await downloadSizeHandle.Task;
 
+            if (downloadSizeHandle.Status != AsyncOperationStatus.Succeeded)
+            {
+                Addressables.Release(downloadSizeHandle); // 핸들 해제
+                continue;
+            }
+
+            long totalBytes = downloadSizeHandle.Result;
+            Addressables.Release(downloadSizeHandle); // 사용 완료된 크기 확인 핸들 해제
+
+            totalByte += totalBytes;
+
+            if (totalByte > 0)
+                m_checkDownload.Add(label, totalBytes);
+        }
+        return totalByte;
+    }
     // ----------------------------------------------------------------------
     // ## 에셋 로딩 (Asset Loading - No Instantiation)
     // ----------------------------------------------------------------------

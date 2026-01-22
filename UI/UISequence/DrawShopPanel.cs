@@ -47,14 +47,15 @@ public class DrawShopPanel : UIBase
         List<int> ids = new();
         for (int i = 0; i < drawCount; i++)
         {
-            ids.Add(Random.Range(0, 2));
+            ids.Add(Random.Range(1, 30));
         }
 
         int count = 0;
         foreach (int id in ids)
         {
-            Get<Image>(count++).gameObject.SetActive(true);
-            Logger.Log($"Get Character Card {id}");
+            Get<Image>(count).gameObject.SetActive(true);
+            Get<Image>(count).sprite = GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(id).GetCharacterSprite();
+            count += 1;
         }
     }
 }

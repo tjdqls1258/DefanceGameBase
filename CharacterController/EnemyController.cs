@@ -4,7 +4,12 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
-public class EnemyController : MonoBehaviour
+public interface IGamePlayCharacter
+{
+    public void DieAction();
+}
+
+public class EnemyController : MonoBehaviour, IGamePlayCharacter
 {
     [SerializeField] protected EnemeyData m_enemyData;
 
@@ -80,13 +85,17 @@ public class EnemyController : MonoBehaviour
 
         m_currentPathIndex = 0;
         gameObject.SetActive(true);
-        m_hpController.InitController(m_enemyData.characterState);
+        m_hpController.InitController(m_enemyData.characterState, DieAction_Enemy);
+        m_characterAnimationController.PlayAnimation_Bool(CharacterAnimationController.AnimationBool.DIE, false);
+        isDie = false;
     }
 
-    public virtual void DieAction()
+    public virtual void DieAction_Enemy()
     {
+        isDie = true;
         m_cancellation.Cancel();
         m_disableAction?.Invoke(m_enemyData.ID, this);
+        m_characterAnimationController.PlayAnimation_Bool(CharacterAnimationController.AnimationBool.DIE, true);
     }
 
     public virtual void ArraiveEndPosition()
@@ -105,5 +114,10 @@ public class EnemyController : MonoBehaviour
     private void OnDisable()
     {
         m_cancellation.Cancel();
+    }
+
+    public virtual void DieAction()
+    {
+        gameObject.SetActive(false);
     }
 }

@@ -9,6 +9,8 @@ public class HPController : MonoBehaviour
     [SerializeField] protected float m_maxHP;
     protected float m_currentHp = 0;
 
+    protected Action m_dieAction;
+
     public float currentHp
     {
         protected set
@@ -22,16 +24,20 @@ public class HPController : MonoBehaviour
         }
     }
 
-    public virtual void InitController(CharacterState characterStateData)
+    public virtual void InitController(CharacterState characterStateData, Action dieAction)
     {
         Logger.Log($"Set Hp {characterStateData.maxHp}");
         m_maxHP = characterStateData.maxHp;
         currentHp = characterStateData.maxHp;
+
+        m_dieAction = dieAction;
     }
 
     public void UpdateHp(float addHp)
     {
         Logger.Log($"AddHp {currentHp} + {addHp}");
         currentHp = currentHp + addHp;
+        if (currentHp <= 0 && m_dieAction != null)
+            m_dieAction.Invoke();
     }
 }

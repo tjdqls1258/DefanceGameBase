@@ -12,7 +12,7 @@ using static UnityEngine.GraphicsBuffer;
 /// 공격 사거리 내의 적을 감지하고, 가장 가까운 적을 대상으로 주기적인 자동 공격을 수행합니다.
 /// </summary>
 [RequireComponent(typeof(CircleCollider2D))]
-public class PlayerAttackController : MonoBehaviour
+public class PlayerAttackController : MonoBehaviour, IGamePlayCharacter
 {
     private readonly string effectName = "EffectPrefabs/Hit_FX01.prefab";
 
@@ -63,7 +63,7 @@ public class PlayerAttackController : MonoBehaviour
         m_characterData = characterData;
         SetEffect().Forget();
         characterData.characterData.SetCharacterState();
-        m_pHpController.InitController(characterData.characterData.characterState);
+        m_pHpController.InitController(characterData.characterData.characterState, DieAction_PlayerAction);
 
         if(animator != null)
             m_characterAnimationController = animator;
@@ -200,5 +200,15 @@ public class PlayerAttackController : MonoBehaviour
     private void OnDestroy()
     {
         ObjectPoolManager.Instance.RemovePoolObject(effectName);
+    }
+
+    protected virtual void DieAction_PlayerAction()
+    {
+
+    }
+
+    public virtual void DieAction()
+    {
+        DieAction_PlayerAction();
     }
 }

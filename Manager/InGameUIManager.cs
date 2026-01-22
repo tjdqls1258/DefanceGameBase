@@ -1,12 +1,14 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class InGameUIManager : UIBaseFormMaker
 {
+    [SerializeField] private UnitButton m_unitButtonBase;
     [SerializeField] private TextMeshProUGUI m_costText;
-    [SerializeField] private UnitButton[] m_spawnButton;
+    private List<UnitButton> m_spawnButton = new();
 
     private Camera m_camera;
     public Camera mainCamera
@@ -33,6 +35,10 @@ public class InGameUIManager : UIBaseFormMaker
     {
         base.Awake();
         Bind<OnClickCharacterPaenl>(typeof(OnClickSettingPanel));
+
+        //최초 스폰 버튼 초기화
+        m_spawnButton.Add(m_unitButtonBase);
+        m_updateCostAction += m_unitButtonBase.UpdateCostAction;
     }
 
     public void SetInGameDataTest()
@@ -42,7 +48,9 @@ public class InGameUIManager : UIBaseFormMaker
         System.Collections.Generic.List<CharacterData> testdatas = new()
         {
             GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(1),
-            GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(2)
+            GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(2),
+            GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(3),
+            GameMaster.Instance.csvHelper.GetScripteData<CharacterDataList>().GetData(4)
         };
 
         SetCharacterDatas(testdatas.ToArray());
@@ -61,13 +69,20 @@ public class InGameUIManager : UIBaseFormMaker
     }
 
     public void SetCharacterDatas(CharacterData[] characterDatas)
-    {
-        for (int characterCount = 0; characterCount < characterDatas.Length;characterCount++)
+    {       
+        for (int characterCount = 0; characterCount < GameData.MAX_SETTING_CHARACTERCOUNT; characterCount++)
         {
-            if (m_spawnButton.Length <= characterCount)
+            if (characterCount >= characterDatas.Length)
+            {
                 break;
+            }
+            if (m_spawnButton.Count <= characterCount)
+            {
+                m_spawnButton.Add(Instantiate(m_unitButtonBase, m_unitButtonBase.transform.parent));
+                m_updateCostAction += m_spawnButton[characterCount].UpdateCostAction;
+            }
+
             m_spawnButton[characterCount].SetCharater(characterDatas[characterCount], this);
-            m_updateCostAction += m_spawnButton[characterCount].UpdateCostAction;
         }
     }
 

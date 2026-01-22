@@ -162,8 +162,10 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
     private async UniTask CreateCharacterPreviewAsync()
     {
         if (m_previewCharacter != null)
-            return;
-
+        {
+            DestroyImmediate(m_previewCharacter);
+            m_previewCharacter = null;
+        }
         // AddressableManager를 통해 객체를 비동기로 인스턴스화
         //var obj = await AddressableManager.Instance.InstantiateObjectAsync(m_characterData.modelObjectName);
         var obj = await AddressableManager.Instance.InstantiateObjectAsync("Test");
@@ -263,7 +265,7 @@ public class UnitButton : MonoBehaviour, IEndDragHandler, IDragHandler, IPointer
         if (m_previewCharacter == null || m_previewCharacter.CheckSpawn())
             return;
 
-        if (m_characterData.cost >= cost && m_isUnitSpawned == false)
+        if (m_characterData.cost > cost && m_isUnitSpawned == false)
         {
             ActiveBlockButton(true);
         }

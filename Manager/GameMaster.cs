@@ -10,7 +10,7 @@ using UnityEngine;
 /// </summary>
 public class GameMaster : MonoSingleton<GameMaster>
 {
-    readonly string[] ADDRESSABLE_LABEL = { "InGameData", "SpriteAltas", "JsonData", "UI" };
+    readonly string[] ADDRESSABLE_LABEL = { "InGameData", "SpriteAltas", "JsonData", "UI", "CharacterSprite" };
 
     private CSVHelper m_csvHelper = new();
 
@@ -35,16 +35,39 @@ public class GameMaster : MonoSingleton<GameMaster>
     public override void Init()
     {
         base.Init();
+
+        popupManager.SettingPopupData();
     }
 
-    public async UniTask InitAddress(Action<string, long, long> downloadAction)
+    public async UniTask InitAddress(Action<string, long, long> downloadAction, Action downloadDoneAction)
     {
         // Addressables 초기화 및 다운로드 확인
         // 필수 리소스 다운로드 및 초기화가 완료될 때까지 대기합니다.
         await addressableManager.InitAsync();
 
-        await addressableManager.DownloadAssetsAsync(ADDRESSABLE_LABEL, onDownloading:downloadAction);
-        
+        var checkDownl = await addressableManager.DownloadChecdk(ADDRESSABLE_LABEL);
+        if (checkDownl == 0)
+        {
+            var popup = await popupManager.ShowPopup(PopupManager.PopupType.PopupQ) as PopupQ;
+
+            popup.okAction += () =>
+            {
+                addressableManager.DownloadAssetsAsync(onDownloading: downloadAction, downloadDoneAction).Forget();
+            };
+            popup.noAction += () =>
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                Application.Quit(); // 어플리케이션 종료
+#endif
+            };
+        }
+        else
+        {
+            downloadDoneAction?.Invoke();
+        }
+       
     }
 
     /// <summary>
@@ -56,7 +79,8 @@ public class GameMaster : MonoSingleton<GameMaster>
         soundManager.Init();
         sceneLoadManager.Init();
         uiManager.Init();
-        popupManager.Init();
+
+        await popupManager.SettingPopupDataAsync();
         await csvHelper.InitCSVDataAsync();
 
         // 핵심 리소스 로드 (Master Canvas 등)

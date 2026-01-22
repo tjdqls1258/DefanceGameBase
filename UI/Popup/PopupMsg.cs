@@ -4,17 +4,32 @@ public class PopupMsg : PopupBase
 {
     enum Button
     {
-        CloseButton,
+        OKButton,
     }
 
-    public override void Init(params object[] parm)
+    enum Texts
     {
-        base.Init(parm);
-        Bind<UnityEngine.UI.Button>(typeof(Button));
+        MessageText
+    }
 
-        Get<UnityEngine.UI.Button>((int)Button.CloseButton).onClick.AddListener(()=> 
+    protected override void BindInit()
+    {
+        Bind<UnityEngine.UI.Button>(typeof(Button));
+        Bind<TMPro.TextMeshProUGUI>(typeof(Texts));
+    }
+    protected override void AddBtnEvent()
+    {
+        Get<UnityEngine.UI.Button>((int)Button.OKButton).onClick.AddListener(() =>
         {
-            Close();    
+            Close();
         });
+    }
+
+    public string Mssage
+    {
+        set
+        {
+            Get<TMPro.TextMeshProUGUI>(0).text = value;
+        }
     }
 }

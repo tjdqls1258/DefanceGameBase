@@ -27,17 +27,6 @@
   * `MapData.cs`: 맵의 구조나 경로 정보를 정의하는 데이터 스크립트
   * `AwakeScene.cs`: 게임 시작 시 초기 설정을 담당하는 스크립트
 
-## 🚀 시작 방법
-
-1.  이 레포지토리를 클론합니다.
-    ```bash
-    git clone https://github.com/tjdqls1258/DefanceGameBase.git
-    ```
-2.  프로젝트를 개발 환경(예: Unity)에서 엽니다.
-3.  각 모듈(Manager, CharacterController 등)의 스크립트를 기반으로 프로젝트에 맞는 세부 로직을 구현합니다.
-
------
-
 UI 에디터
 <img width="2547" height="1015" alt="image" src="https://github.com/user-attachments/assets/af708302-6b00-42f8-bdb5-bde5f380934b" />
 

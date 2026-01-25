@@ -14,11 +14,11 @@ public class AwakeScene : MonoBehaviour
     async UniTask StartAscy()
     {
         GameMaster.Instance.Init();
-        m_loadingPanel.ShowPanel(LoadingPanel.CanvasGroups.DownloadPaenl);
-        await GameMaster.Instance.InitAddress(m_loadingPanel.LoadingText, () =>
-        {
-            InitStart().Forget();
-        });
+
+        await GameMaster.Instance.InitAddress(
+            ()=>m_loadingPanel.ShowPanel(LoadingPanel.CanvasGroups.DownloadPaenl),
+            m_loadingPanel.LoadingText, 
+            () => InitStart().Forget());
     }
 
     async UniTask InitStart()

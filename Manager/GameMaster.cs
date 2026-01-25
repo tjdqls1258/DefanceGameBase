@@ -36,22 +36,24 @@ public class GameMaster : MonoSingleton<GameMaster>
     {
         base.Init();
 
+        popupManager.Init();
         popupManager.SettingPopupData();
     }
 
-    public async UniTask InitAddress(Action<string, long, long> downloadAction, Action downloadDoneAction)
+    public async UniTask InitAddress(Action showDownloadPanel,Action<string, long, long> downloadAction, Action downloadDoneAction)
     {
         // Addressables 초기화 및 다운로드 확인
         // 필수 리소스 다운로드 및 초기화가 완료될 때까지 대기합니다.
         await addressableManager.InitAsync();
 
         var checkDownl = await addressableManager.DownloadChecdk(ADDRESSABLE_LABEL);
-        if (checkDownl == 0)
+        if (checkDownl > 0)
         {
             var popup = await popupManager.ShowPopup(PopupManager.PopupType.PopupQ) as PopupQ;
 
             popup.okAction += () =>
             {
+                showDownloadPanel?.Invoke();
                 addressableManager.DownloadAssetsAsync(onDownloading: downloadAction, downloadDoneAction).Forget();
             };
             popup.noAction += () =>
@@ -75,6 +77,7 @@ public class GameMaster : MonoSingleton<GameMaster>
     /// </summary>
     public async UniTask InitAscy()
     {
+        Logger.Log("Do Init GameMaster");
         // 관리자 초기화 (동기적/빠른 초기화)
         soundManager.Init();
         sceneLoadManager.Init();

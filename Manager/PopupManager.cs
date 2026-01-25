@@ -91,7 +91,7 @@ public class PopupManager : MonoSingleton<PopupManager>
         {
             // 4. 로드된 TextAsset은 더 이상 필요 없으므로 해제
             // LoadAddressableAssetAsync를 사용했기 때문에 명시적으로 Release가 필요합니다.
-            Addressables.Release(popupDataTable);
+            AddressableManager.Instance.UnloadAsset(POPUP_DATA_TABLE_KEY);
         }
     }
 

@@ -67,7 +67,7 @@ public class AddressableManager : MonoSingleton<AddressableManager>
         if (!m_isInitialized) await InitAsync();
 
         //if (labels == null || labels.Length == 0) return;
-
+        bool downloadCheck = true;
         foreach (string label in m_checkDownload.Keys)
         {
             // 종속성 다운로드 시작
@@ -75,24 +75,30 @@ public class AddressableManager : MonoSingleton<AddressableManager>
 
             while (!downloadHandle.IsDone)
             {
+                Logger.Log($"CheckDownload {label}");
                 var status = downloadHandle.GetDownloadStatus();
-                onDownloading?.Invoke(label, status.DownloadedBytes, status.TotalBytes);
+                if (status.TotalBytes > 0)
+                    onDownloading?.Invoke(label, status.DownloadedBytes, status.TotalBytes);
+
                 Logger.Log($"{status.DownloadedBytes} / {status.TotalBytes}");
-                await UniTask.Delay(100); // 100ms 간격으로 다운로드 상태를 업데이트
+
+                await UniTask.Delay(100);
             }
 
-            if (downloadHandle.Status == AsyncOperationStatus.Succeeded)
-            {
-                onSuccess?.Invoke();
-            }
-            else
+            if (downloadHandle.Status != AsyncOperationStatus.Succeeded)
             {
                 Logger.LogError($"[AddressableManager] Download failed for label: {label}, Error: {downloadHandle.OperationException}");
-                onFail?.Invoke();
+                downloadCheck = false;
+                Addressables.Release(downloadHandle);
+                break;
             }
-        }
 
-        onSuccess?.Invoke();
+            Addressables.Release(downloadHandle);
+        }
+        if(downloadCheck)
+            onSuccess?.Invoke();
+        else
+            onFail?.Invoke();
     }
 
     public async UniTask<long> DownloadChecdk(string[] lables)
@@ -109,13 +115,13 @@ public class AddressableManager : MonoSingleton<AddressableManager>
                 continue;
             }
 
-            long totalBytes = downloadSizeHandle.Result;
+            long currentLableDownloadByte = downloadSizeHandle.Result;
             Addressables.Release(downloadSizeHandle); // 사용 완료된 크기 확인 핸들 해제
 
-            totalByte += totalBytes;
+            totalByte += currentLableDownloadByte;
 
-            if (totalByte > 0)
-                m_checkDownload.Add(label, totalBytes);
+            if (currentLableDownloadByte > 0)
+                m_checkDownload.Add(label, currentLableDownloadByte);
         }
         return totalByte;
     }
